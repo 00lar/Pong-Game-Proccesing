@@ -1,140 +1,286 @@
- let leftPaddle, rightPaddle;
-    let ball;
-    let leftScore = 0, rightScore = 0;
-    let ballSpeed;
-    let gameTime = 0;
+let paletaIzquierda, paletaDerecha;
+let pelota;
+let puntajeIzquierda = 1, puntajeDerecha = 0;
+let velocidadPelota;
+let tiempoTranscurrido = 0;
+let colores = ["rojo", "verde", "azul", "blanco"];
+let seleccionColorIzquierda, seleccionColorDerecha;
+let menuActivo = true; // Variable para controlar si el menú está activo
+let powerUpActivo = false; // Variable para controlar si un power-up está activo
+let powerUpDuracion = 5000; // Duración en milisegundos de un power-up
+let powerUpTiempoInicio; // Tiempo de inicio de un power-up
+let juegoTerminado = false; // Variable para controlar si el juego ha terminado
+let velocidadAumentada = false;
 
-    function setup() {
-      createCanvas(800, 600);
-      leftPaddle = new Paddle(20, height / 2, color(255, 0, 0));
-      rightPaddle = new Paddle(width - 20, height / 2, color(0, 0, 255));
-      ball = new Ball(width / 2, height / 2, 15);
-      ballSpeed = createVector(5, 5);
+function setup() {
+  createCanvas(800, 600);
+  seleccionColorIzquierda = createSelect();
+  seleccionColorDerecha = createSelect();
+  for (let i = 0; i < colores.length; i++) {
+    seleccionColorIzquierda.option(colores[i]);
+    seleccionColorDerecha.option(colores[i]);
+  }
+  seleccionColorIzquierda.position(10, height + 10);
+  seleccionColorDerecha.position(width - 100, height + 10);
+
+  // Configurar las paletas con colores predeterminados (se cambiarán al iniciar el juego)
+  paletaIzquierda = new Paleta(20, height / 2, color(255, 0, 0));
+  paletaDerecha = new Paleta(width - 20, height / 2, color(0, 0, 255));
+
+  pelota = new Pelota(width / 2, height / 2, 15);
+  velocidadPelota = createVector(5, 5);
+}
+
+function draw() {
+  if (menuActivo) {
+    // Si el menú está activo, mostrar el menú de selección
+    mostrarMenu();
+  } else {
+    // Si el juego está en curso, mostrar el juego
+    if (!juegoTerminado) {
+      tiempoTranscurrido += deltaTime;
     }
 
-    function draw() {
-      background(0);
+    background(0);
 
-      // Draw paddles
-      leftPaddle.show();
-      rightPaddle.show();
+    // Verificar y aplicar power-ups
+    verificarPowerUp();
 
-      // Draw ball
-      ball.show();
-      ball.update();
-      ball.checkCollision(leftPaddle);
-      ball.checkCollision(rightPaddle);
+    // Dibujar paletas
+    paletaIzquierda.mostrar();
+    paletaDerecha.mostrar();
 
-      // Move paddles
-      leftPaddle.move();
-      rightPaddle.move();
+    // Dibujar pelota
+    pelota.mostrar();
+    pelota.actualizar();
+    pelota.verificarColision(paletaIzquierda);
+    pelota.verificarColision(paletaDerecha);
 
+    // Mover paletas
+    paletaIzquierda.mover('W', 'S');
+    paletaDerecha.mover(UP_ARROW, DOWN_ARROW);
 
-      // Draw scores
-      fill(255);
-      textSize(32);
-      text(leftScore, width / 4, 50);
-      text(rightScore, 3 * width / 4, 50);
+    // Dibujar puntajes y tiempo en medio
+    fill(255);
+    textSize(32);
+    text(puntajeIzquierda, width / 4, height / 2);
+    text(puntajeDerecha, 3 * width / 4, height / 2);
+    text(floor(tiempoTranscurrido / 1000) + "s", width / 2, height / 2);
 
-      // Check for score
-      if (ball.isOut()) {
-        if (ball.x < 0) {
-          rightScore++;
-        } else {
-          leftScore++;
-        }
-        ball.reset();
-      }
+ 
+// Verificar puntaje
+if (pelota.isFuera()) {
+  if (pelota.x <  height) {
+    puntajeDerecha++; // Incrementar puntaje del lado derecho
+  } else if (pelota.x > height) {
+    puntajeIzquierda++; // Incrementar puntaje del lado izquierdo
+  }
+  pelota.resetear();
+}
 
-      // Check for game end
-      if (leftScore >= 9 && leftScore - rightScore >= 2) {
-        alert("Left player wins!");
-        resetGame();
-      } else if (rightScore >= 9 && rightScore - leftScore >= 2) {
-        alert("Right player wins!");
-        resetGame();
-      }
+// Verificar fin del juego
+if (puntajeIzquierda >= 9 && puntajeIzquierda - puntajeDerecha >= 2) {
+  alert("¡El jugador izquierdo gana!");
+  detenerTiempo();
+  reiniciarJuego();
+} else if (puntajeDerecha >= 9 && puntajeDerecha - puntajeIzquierda >= 2) {
+  alert("¡El jugador derecho gana!");
+  detenerTiempo();
+  reiniciarJuego();
+}
 
-      // Increment ball speed every minute
-      gameTime += deltaTime;
-      if (gameTime >= 60000) {
-        gameTime = 0;
-        ballSpeed.add(1, 1);
-      }
+    // Incrementar velocidad de la pelota cada minuto
+        if (!velocidadAumentada && tiempoTranscurrido >= 60000) {
+      velocidadPelota.add(-8, -8);
+      velocidadAumentada = true;
     }
 
-    function resetGame() {
-      leftScore = 0;
-      rightScore = 0;
-      ball.reset();
-      ballSpeed = createVector(5, 5);
+  }
+}
+
+function verificarPowerUp() {
+  if (powerUpActivo) {
+    // Verificar si ha pasado el tiempo del power-up
+    if (millis() - powerUpTiempoInicio >= powerUpDuracion) {
+      powerUpActivo = false; // Desactivar el power-up
+      paletaIzquierda.resetearColor(); // Restablecer el color de la paleta izquierda
     }
-
-    class Paddle {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.w = 10;
-        this.h = 80;
-        this.color = color;
-      }
-
-      show() {
-        fill(this.color);
-        rectMode(CENTER);
-        rect(this.x, this.y, this.w, this.h);
-      }
-  //Controles
-      move() {
-        if (keyIsDown(UP_ARROW) && this.y - this.h / 2 > 0) {
-          this.y -= 5;
-        }
-        if (keyIsDown(DOWN_ARROW) && this.y + this.h / 2 < height) {
-          this.y += 5;
-        }
-      }
+  } else {
+    // Verificar si se activa un nuevo power-up
+    if (pelota.x > width / 2 && !powerUpActivo) {
+      activarPowerUp();
     }
+  }
+}
 
-    class Ball {
-      constructor(x, y, r) {
-        this.x = x;
-        this.y = y;
-        this.r = r;
-        this.reset();
-      }
+function activarPowerUp() {
+  let colorIzquierda = seleccionColorIzquierda.value();
+  // Aplicar el power-up a la paleta izquierda
+  switch (colorIzquierda) {
+    case "rojo":
+      paletaIzquierda.color = color(255, 0, 0, 150); // Reducir la opacidad del color rojo
+      break;
+    case "verde":
+      paletaIzquierda.ancho += 20; // Aumentar el ancho de la paleta verde
+      break;
+    case "azul":
+      paletaIzquierda.alto += 20; // Aumentar la altura de la paleta azul
+      break;
+    case "blanco":
+      paletaIzquierda.color = color(255); // Hacer la paleta blanca completamente visible
+      break;
+  }
 
-      show() {
-        fill(255);
-        ellipse(this.x, this.y, this.r * 2);
-      }
+  powerUpActivo = true; // Activar el indicador de power-up activo
+  powerUpTiempoInicio = millis(); // Guardar el tiempo de inicio del power-up
+}
 
-      update() {
-        this.x += ballSpeed.x;
-        this.y += ballSpeed.y;
+function mostrarMenu() {
+  background(50); // Fondo oscuro para el menú
 
-        // Check boundaries
-        if (this.y - this.r < 0 || this.y + this.r > height) {
-          ballSpeed.y *= -1;
-        }
-      }
+  fill(255);
+  textSize(32);
+  text("Selecciona el color de la raqueta izquierda:", width / 4, height / 3);
+  text("Selecciona el color de la raqueta derecha:", width / 4, 2 * height / 3);
 
-      checkCollision(paddle) {
-        if (
-          this.x - this.r < paddle.x + paddle.w / 2 &&
-          this.x + this.r > paddle.x - paddle.w / 2 &&
-          this.y - this.r < paddle.y + paddle.h / 2 &&
-          this.y + this.r > paddle.y - paddle.h / 2
-        ) {
-          ballSpeed.x *= -1;
-        }
-      }
+  // Mostrar selección de colores
+  seleccionColorIzquierda.show();
+  seleccionColorDerecha.show();
 
-      isOut() {
-        return this.x - this.r < 0 || this.x + this.r > width;
-      }
+  // Botón para iniciar el juego
+  fill(0, 255, 0);
+  rect(width / 2 - 100, 2 * height / 3 + 50, 200, 50);
+  fill(255);
+  textSize(24);
+  text("Comenzar Juego", width / 2 - 90, 2 * height / 3 + 85);
 
-      reset() {
-        this.x = width / 2;
-        this.y = height / 2;
-      }
+  // Verificar clic en el botón
+  if (
+    mouseX > width / 2 - 100 &&
+    mouseX < width / 2 + 100 &&
+    mouseY > 2 * height / 3 + 50 &&
+    mouseY < 2 * height / 3 + 100
+  ) {
+    menuActivo = false; // Desactivar el menú al hacer clic en el botón
+    reiniciarJuego();
+  }
+}
+
+function detenerTiempo() {
+  juegoTerminado = true; // Indicar que el juego ha terminado
+  noLoop();  // Detener el bucle de dibujo
+}
+
+function reiniciarJuego() {
+  juegoTerminado = false; // Indicar que el juego ha comenzado de nuevo
+  tiempoTranscurrido = 0;
+  puntajeIzquierda = 0;
+  puntajeDerecha = 0;
+  pelota.resetear();
+  velocidadPelota = createVector(5, 5);
+
+  // Configurar las paletas con los colores seleccionados
+  let colorIzquierda = seleccionColorIzquierda.value();
+  let colorDerecha = seleccionColorDerecha.value();
+  paletaIzquierda.color = color(obtenerColorRGB(colorIzquierda));
+  paletaDerecha.color = color(obtenerColorRGB(colorDerecha));
+
+  loop(); // Reiniciar el bucle de dibujo
+}
+
+function obtenerColorRGB(nombreColor) {
+  switch (nombreColor) {
+    case "rojo":
+      return [255, 0, 0];
+    case "verde":
+      return [0, 255, 0];
+    case "azul":
+      return [0, 0, 255];
+    case "blanco":
+      return [255, 255, 255];
+    default:
+      return [0, 0, 0]; // Color predeterminado negro en caso de error
+  }
+}
+
+class Paleta {
+  constructor(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.ancho = 10;
+    this.alto = 80;
+    this.color = color;
+    this.colorOriginal = color; // Guardar el color original para restablecerlo después del power-up
+  }
+
+  mostrar() {
+    fill(this.color);
+    rectMode(CENTER);
+    rect(this.x, this.y, this.ancho, this.alto);
+  }
+
+  // Controles
+  mover(teclaArriba, teclaAbajo) {
+    if (keyIsDown(teclaArriba) && this.y - this.alto / 2 > 0) {
+      this.y -= 5;
     }
+    if (keyIsDown(teclaAbajo) && this.y + this.alto / 2 < height) {
+      this.y += 5;
+    }
+    // Agregar movimiento con teclas 'w' y 's'
+    if (keyIsDown(87) && this.y - this.alto / 2 > 0) {
+      this.y -= 5; // 'w' para mover arriba
+    }
+    if (keyIsDown(83) && this.y + this.alto / 2 < height) {
+      this.y += 5; // 's' para mover abajo
+    }
+  }
+
+  resetearColor() {
+    this.color = this.colorOriginal; // Restablecer el color original después del power-up
+  }
+}
+
+class Pelota {
+  constructor(x, y, r) {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.resetear();
+  }
+
+  mostrar() {
+    fill(255);
+    ellipse(this.x, this.y, this.r * 2);
+  }
+
+  actualizar() {
+    this.x += velocidadPelota.x;
+    this.y += velocidadPelota.y;
+
+    // Verificar límites
+    if (this.y - this.r < 0 || this.y + this.r > height) {
+      velocidadPelota.y *= -1;
+    }
+  }
+
+  verificarColision(paleta) {
+    if (
+      this.x - this.r < paleta.x + paleta.ancho / 2 &&
+      this.x + this.r > paleta.x - paleta.ancho / 2 &&
+      this.y - this.r < paleta.y + paleta.alto / 2 &&
+      this.y + this.r > paleta.y - paleta.alto / 2
+    ) {
+      velocidadPelota.x *= -1;
+    }
+  }
+
+  isFuera() {
+    return this.x - this.r < 0 || this.x + this.r > width;
+  }
+
+  resetear() {
+    this.x = width / 2;
+    this.y = height / 2;
+  }
+}
