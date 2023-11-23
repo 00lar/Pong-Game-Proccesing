@@ -10,6 +10,7 @@ let powerUpActivo = false; // Variable para controlar si un power-up está activ
 let powerUpDuracion = 5000; // Duración en milisegundos de un power-up
 let powerUpTiempoInicio; // Tiempo de inicio de un power-up
 let juegoTerminado = false; // Variable para controlar si el juego ha terminado
+let velocidadAumentada = false; // variable para controlar la velocidad de la pelota despues del minuto
 
 function setup() {
   createCanvas(800, 600);
@@ -88,9 +89,9 @@ function draw() {
     }
 
     // Incrementar velocidad de la pelota cada minuto
-    if (!juegoTerminado && tiempoTranscurrido >= 60000) {
-      tiempoTranscurrido = 0;
-      velocidadPelota.add(1, 1);
+        if (!velocidadAumentada && tiempoTranscurrido >= 60000) {
+      velocidadPelota.add(-8, -8);
+      velocidadAumentada = true;
     }
   }
 }
