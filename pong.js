@@ -10,7 +10,6 @@ let powerUpActivo = false; // Variable para controlar si un power-up está activ
 let powerUpDuracion = 5000; // Duración en milisegundos de un power-up
 let powerUpTiempoInicio; // Tiempo de inicio de un power-up
 let juegoTerminado = false; // Variable para controlar si el juego ha terminado
-let velocidadAumentada = false;
 
 function setup() {
   createCanvas(800, 600);
@@ -57,8 +56,8 @@ function draw() {
     pelota.verificarColision(paletaDerecha);
 
     // Mover paletas
-    paletaIzquierda.mover('W', 'S');
-    paletaDerecha.mover(UP_ARROW, DOWN_ARROW);
+    paletaIzquierda.mover();
+    paletaDerecha.mover();
 
     // Dibujar puntajes y tiempo en medio
     fill(255);
@@ -67,34 +66,67 @@ function draw() {
     text(puntajeDerecha, 3 * width / 4, height / 2);
     text(floor(tiempoTranscurrido / 1000) + "s", width / 2, height / 2);
 
- 
-// Verificar puntaje
-if (pelota.isFuera()) {
-  if (pelota.x <  height) {
-    puntajeDerecha++; // Incrementar puntaje del lado derecho
-  } else if (pelota.x > height) {
-    puntajeIzquierda++; // Incrementar puntaje del lado izquierdo
-  }
-  pelota.resetear();
-}
-
-// Verificar fin del juego
-if (puntajeIzquierda >= 9 && puntajeIzquierda - puntajeDerecha >= 2) {
-  alert("¡El jugador izquierdo gana!");
-  detenerTiempo();
-  reiniciarJuego();
-} else if (puntajeDerecha >= 9 && puntajeDerecha - puntajeIzquierda >= 2) {
-  alert("¡El jugador derecho gana!");
-  detenerTiempo();
-  reiniciarJuego();
-}
-
-    // Incrementar velocidad de la pelota cada minuto
-        if (!velocidadAumentada && tiempoTranscurrido >= 60000) {
-      velocidadPelota.add(-8, -8);
-      velocidadAumentada = true;
+    // Verificar puntaje
+    if (pelota.isFuera()) {
+      if (pelota.x < height) {
+        puntajeDerecha++; // Incrementar puntaje del lado derecho
+      } else if (pelota.x > height) {
+        puntajeIzquierda++; // Incrementar puntaje del lado izquierdo
+      }
+      pelota.resetear();
     }
 
+    // Verificar fin del juego
+    if (puntajeIzquierda >= 9 && puntajeIzquierda - puntajeDerecha >= 2) {
+      alert("¡El jugador izquierdo gana!");
+      detenerTiempo();
+      reiniciarJuego();
+    } else if (puntajeDerecha >= 9 && puntajeDerecha - puntajeIzquierda >= 2) {
+      alert("¡El jugador derecho gana!");
+      detenerTiempo();
+      reiniciarJuego();
+    }
+
+    // Incrementar velocidad de la pelota cada minuto
+    if (!juegoTerminado && tiempoTranscurrido >= 60000) {
+      tiempoTranscurrido = 0;
+      velocidadPelota.add(1, 1);
+    }
+  }
+}
+
+// Nueva implementación de controles
+function keyPressed() {
+  if (key == 'w' || key == 'W') {
+    paletaIzquierda.up = true;
+  }
+  if (key == 's' || key == 'S') {
+    paletaIzquierda.down = true;
+  }
+  if (keyCode == UP_ARROW) {
+    paletaDerecha.up = true;
+  }
+  if (keyCode == DOWN_ARROW) {
+    paletaDerecha.down = true;
+  }
+}
+
+function keyReleased() {
+  // Conseguir un movimiento fluido de las teclas w, s, up y down.
+  // Estableciendo que si soltamos w, s, up o down, entonces se detenga.
+  // Y para evitar que si hay dos jugadores, el programa congele el movimiento de los jugadores por tocar tantas teclas a la vez.
+
+  if (key == 'w' || key == 'W') {
+    paletaIzquierda.up = false;
+  }
+  if (key == 's' || key == 'S') {
+    paletaIzquierda.down = false;
+  }
+  if (keyCode == UP_ARROW) {
+    paletaDerecha.up = false;
+  }
+  if (keyCode == DOWN_ARROW) {
+    paletaDerecha.down = false;
   }
 }
 
@@ -211,6 +243,8 @@ class Paleta {
     this.alto = 80;
     this.color = color;
     this.colorOriginal = color; // Guardar el color original para restablecerlo después del power-up
+    this.up = false;
+    this.down = false;
   }
 
   mostrar() {
@@ -220,19 +254,12 @@ class Paleta {
   }
 
   // Controles
-  mover(teclaArriba, teclaAbajo) {
-    if (keyIsDown(teclaArriba) && this.y - this.alto / 2 > 0) {
+  mover() {
+    if (this.up && this.y - this.alto / 2 > 0) {
       this.y -= 5;
     }
-    if (keyIsDown(teclaAbajo) && this.y + this.alto / 2 < height) {
+    if (this.down && this.y + this.alto / 2 < height) {
       this.y += 5;
-    }
-    // Agregar movimiento con teclas 'w' y 's'
-    if (keyIsDown(87) && this.y - this.alto / 2 > 0) {
-      this.y -= 5; // 'w' para mover arriba
-    }
-    if (keyIsDown(83) && this.y + this.alto / 2 < height) {
-      this.y += 5; // 's' para mover abajo
     }
   }
 
