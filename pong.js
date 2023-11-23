@@ -90,7 +90,7 @@ function draw() {
 
     // Incrementar velocidad de la pelota cada minuto
         if (!velocidadAumentada && tiempoTranscurrido >= 60000) {
-      velocidadPelota.add(-8, -8);
+      velocidadPelota.set(7, 7);
       velocidadAumentada = true;
     }
   }
